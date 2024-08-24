@@ -4,6 +4,7 @@ pipeline {
     environment {
         MONGO_DEB_URL = 'https://repo.mongodb.org/apt/ubuntu/dists/jammy/mongodb-org/7.0/multiverse/binary-amd64/mongodb-org-server_7.0.12_amd64.deb'
         REPO_URL = 'https://github.com/Ashutosh-Ahirwar/AquilaCMS.git'
+        REPO_DIR = 'AquilaCMS'
     }
 
     stages {
@@ -23,9 +24,23 @@ pipeline {
             }
         }
 
+        stage('Clone or Pull Repository') {
+            steps {
+                script {
+                    if (fileExists(REPO_DIR)) {
+                        dir(REPO_DIR) {
+                            sh 'git pull'
+                        }
+                    } else {
+                        sh 'git clone ${REPO_URL}'
+                    }
+                }
+            }
+        }
+
         stage('Enable Corepack and Install Yarn') {
             steps {
-                dir('AquilaCMS') {
+                dir(REPO_DIR) {
                     sh 'echo "y" | corepack enable'
                     sh 'yarn set version stable'
                     sh 'echo "y" | yarn install || true'  // Continue even if yarn install fails
@@ -33,16 +48,10 @@ pipeline {
             }
         }
 
-        stage('Clone Repository') {
-            steps {
-                sh 'git clone ${REPO_URL}'
-            }
-        }
-
         stage('Build and Start Application') {
             steps {
                 script {
-                    dir('AquilaCMS') {
+                    dir(REPO_DIR) {
                         try {
                             // Ensure app starts and listens on 0.0.0.0
                             sh 'npm start || true'  // Ignore initial npm start failure
