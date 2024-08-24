@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    options {
+        // Abort any previous running builds when a new build starts
+        disableConcurrentBuilds(abortPrevious: true)
+    }
+
     environment {
         MONGO_DEB_URL = 'https://repo.mongodb.org/apt/ubuntu/dists/jammy/mongodb-org/7.0/multiverse/binary-amd64/mongodb-org-server_7.0.12_amd64.deb'
         REPO_URL = 'https://github.com/Ashutosh-Ahirwar/AquilaCMS.git'
