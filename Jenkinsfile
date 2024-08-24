@@ -49,6 +49,16 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                dir(REPO_DIR) {
+                    // Ensure all dependencies including dotenv are installed
+                    sh 'yarn add dotenv'
+                    sh 'yarn install || true'  // Continue even if yarn install fails
+                }
+            }
+        }
+
         stage('Initial Start of Application') {
             steps {
                 script {
