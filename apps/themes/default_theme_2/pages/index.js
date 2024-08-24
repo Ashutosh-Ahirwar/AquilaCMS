@@ -41,6 +41,7 @@ export default function Home({ origin }) {
 
     return (
         <Layout>
+        <h1> CHANGED </h1>
             <NextSeoCustom
                 title={`${environment?.siteName} - ${staticPage.title}`}
                 description={staticPage.metaDesc}
