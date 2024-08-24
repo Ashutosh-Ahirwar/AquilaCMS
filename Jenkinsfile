@@ -48,39 +48,71 @@ pipeline {
             }
         }
 
-        stage('Build and Start Application') {
+        stage('Start Application and Wait for Logs') {
             steps {
                 script {
                     dir(REPO_DIR) {
-                        try {
-                            // Ensure app starts and listens on 0.0.0.0
-                            sh 'npm start || true'  // Ignore initial npm start failure
-                        } catch (Exception e) {
-                            echo 'Initial npm start failed, trying theme compilation'
-                            sh 'cd apps/themes/default_theme_2/ && npm run build'
-                            sh 'cd ../../..'
-                            sh 'npm start'
+                        sh 'npm start &> app.log & echo $! > .pid' // Start the app and save the process ID
+                        sleep 10  // Wait a few seconds for the app to start
+                        
+                        // Wait for a specific error message or success indication in the log
+                        def maxAttempts = 20
+                        def attempt = 0
+                        def success = false
+                        while (attempt < maxAttempts) {
+                            if (fileExists('app.log')) {
+                                def logContent = readFile('app.log')
+                                if (logContent.contains("Error loading the theme") || logContent.contains("listening on port 3010")) {
+                                    echo 'App has started and logs contain expected content'
+                                    success = true
+                                    break
+                                }
+                            }
+                            echo 'App not ready yet, retrying...'
+                            sleep 15  // Wait before checking again
+                            attempt++
+                        }
+
+                        if (!success) {
+                            error 'App did not start correctly within the expected time.'
                         }
                     }
                 }
             }
         }
 
-        stage('Ensure Port 3010 Availability') {
+        stage('Compile Themes and Restart Application') {
             steps {
                 script {
-                    // Use a loop to ensure port 3010 is available and the app is running
-                    def maxAttempts = 10
-                    def attempt = 0
-                    while (attempt < maxAttempts) {
-                        try {
-                            sh 'curl -I http://localhost:3010 || true'
-                            echo 'Port 3010 is available'
-                            break
-                        } catch (Exception e) {
-                            echo 'Port 3010 not available yet, retrying...'
-                            sleep 30  // Wait for 30 seconds before retrying
+                    dir(REPO_DIR) {
+                        sh 'kill $(cat .pid)' // Stop the first run of the application
+
+                        // Compile themes
+                        sh 'cd apps/themes/default_theme_2/ && npm run build'
+
+                        // Start the app again
+                        sh 'npm start &> app.log & echo $! > .pid'
+                        
+                        // Wait for app to be ready again
+                        def maxAttempts = 20
+                        def attempt = 0
+                        def success = false
+                        while (attempt < maxAttempts) {
+                            if (fileExists('app.log')) {
+                                def logContent = readFile('app.log')
+                                if (logContent.contains("listening on port 3010")) {
+                                    echo 'App restarted and is now listening on port 3010'
+                                    success = true
+                                    break
+                                }
+                            }
+                            echo 'App not ready yet, retrying...'
+                            sleep 15  // Wait before checking again
                             attempt++
+                        }
+
+                        if (!success) {
+                            error 'App did not restart correctly within the expected time.'
                         }
                     }
                 }
@@ -91,6 +123,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: '**/AquilaCMS/**/*', allowEmptyArchive: true
+            sh 'kill $(cat .pid) || true' // Ensure the app is stopped
         }
     }
 }
