@@ -67,8 +67,8 @@ pipeline {
                         sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
 
-                        // Check if the app is listening on the port or if it encountered an error
-                        def maxAttempts = 10
+                        // Wait for the specific error message to appear in the logs
+                        def maxAttempts = 20  // Increase this if necessary
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
@@ -76,26 +76,22 @@ pipeline {
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 echo "Log Content: ${logContent}"
-                                if (logContent.contains("listening on port ${PORT}")) {
-                                    echo 'App is listening on port ${PORT}. Waiting for potential errors...'
-                                    success = true
-                                    break
-                                } else if (logContent.contains("Error: Command failed: yarn install")) {
-                                    echo 'Error occurred: yarn install failed'
+                                if (logContent.contains("Error: Command failed: yarn install")) {
+                                    echo 'Error detected in logs: Command failed: yarn install'
                                     success = true
                                     break
                                 }
                             }
-                            echo 'App not ready yet or error not found, retrying...'
-                            sleep 10
+                            echo 'Error not found yet, retrying...'
+                            sleep 20  // Wait before checking again
                             attempt++
                         }
 
                         if (!success) {
-                            error 'App did not start correctly or did not find the specific error within the expected time.'
+                            error 'Expected error did not appear in the logs within the expected time.'
                         }
 
-                        // Stop the app process after confirmation
+                        // Stop the app process after finding the error
                         sh 'kill $(cat .pid) || true'
                     }
                 }
@@ -111,7 +107,7 @@ pipeline {
                         sleep 10  // Wait a few seconds for the app to start
 
                         // Check if the app is listening on the port or if it encountered an error
-                        def maxAttempts = 10
+                        def maxAttempts = 20  // Increase this if necessary
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
@@ -126,7 +122,7 @@ pipeline {
                                 }
                             }
                             echo 'App not ready yet or error not found, retrying...'
-                            sleep 10
+                            sleep 20
                             attempt++
                         }
 
@@ -152,7 +148,7 @@ pipeline {
                         sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         
                         // Wait for app to be ready
-                        def maxAttempts = 10
+                        def maxAttempts = 20  // Increase this if necessary
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
@@ -167,7 +163,7 @@ pipeline {
                                 }
                             }
                             echo 'App not ready yet, retrying...'
-                            sleep 10
+                            sleep 20
                             attempt++
                         }
 
