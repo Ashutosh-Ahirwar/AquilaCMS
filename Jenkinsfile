@@ -63,6 +63,9 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
+                        // Ensure port is free
+                        sh "fuser -k ${PORT}/tcp || true"
+
                         // Start the application and capture the output in a file
                         sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
@@ -101,6 +104,9 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
+                        // Ensure port is free
+                        sh "fuser -k ${PORT}/tcp || true"
+
                         // Start the application and capture the output in a file
                         sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
@@ -139,6 +145,9 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
+                        // Ensure port is free
+                        sh "fuser -k ${PORT}/tcp || true"
+
                         // Compile the themes
                         sh 'cd apps/themes/default_theme_2/ && npm run build'
 
