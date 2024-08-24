@@ -44,9 +44,7 @@ pipeline {
                 dir(REPO_DIR) {
                     sh 'echo "y" | corepack enable'
                     sh 'yarn set version stable'
-                    
-                    // Run yarn install and allow it to complete even if it fails
-                    sh 'yarn install || true'
+                    sh 'echo "y" | yarn install || true'
                 }
             }
         }
