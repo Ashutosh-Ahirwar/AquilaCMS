@@ -62,6 +62,7 @@ pipeline {
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
+                            sh 'sudo ss -tuln'  // Print all listening ports
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 if (logContent.contains("listening on port ${PORT}")) {
@@ -103,6 +104,7 @@ pipeline {
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
+                            sh 'sudo ss -tuln'  // Print all listening ports
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 if (logContent.contains("listening on port ${PORT}")) {
@@ -146,6 +148,7 @@ pipeline {
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
+                            sh 'sudo ss -tuln'  // Print all listening ports
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 if (logContent.contains("listening on port ${PORT}")) {
