@@ -12,16 +12,16 @@ pipeline {
         stage('Install MongoDB') {
             steps {
                 sh 'curl ${MONGO_DEB_URL} -O'
-                sh 'echo "your_password" | sudo -S dpkg -i mongodb-org-server_7.0.12_amd64.deb'
-                sh 'echo "your_password" | sudo -S systemctl start mongod'
+                sh 'sudo dpkg -i mongodb-org-server_7.0.12_amd64.deb'
+                sh 'sudo systemctl start mongod'
             }
         }
 
         stage('Install Node.js and Corepack') {
             steps {
-                sh 'echo "your_password" | sudo -S snap install node --classic'
+                sh 'sudo snap install node --classic'
                 sh 'npm uninstall -g yarn pnpm -y'
-                sh 'echo "your_password" | sudo -S npm install -g corepack -y'
+                sh 'sudo npm install -g corepack -y'
             }
         }
 
@@ -44,7 +44,7 @@ pipeline {
                 dir(REPO_DIR) {
                     sh 'echo "y" | corepack enable'
                     sh 'yarn set version stable'
-                    sh 'echo "y" | yarn install || true'
+                    sh 'echo "y" | yarn install || true'  // Continue even if yarn install fails
                 }
             }
         }
@@ -55,17 +55,19 @@ pipeline {
                     dir(REPO_DIR) {
                         // Start the application
                         sh 'npm start &> app.log & echo $! > .pid'
-                        
-                        // Monitor logs for the yarn install error and terminate the app if found
+                        sleep 10  // Wait a few seconds for the app to start
+
+                        // Monitor the logs for specific errors
                         def maxAttempts = 10
                         def attempt = 0
-                        def errorFound = false
+                        def success = false
                         while (attempt < maxAttempts) {
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 if (logContent.contains("Error: Command failed: yarn install")) {
-                                    echo 'Error detected: Command failed: yarn install'
-                                    errorFound = true
+                                    echo 'Error detected: Command failed: yarn install. Terminating app.'
+                                    sh 'kill $(cat .pid)'
+                                    success = true
                                     break
                                 }
                             }
@@ -74,10 +76,8 @@ pipeline {
                             attempt++
                         }
 
-                        if (errorFound) {
-                            sh 'kill $(cat .pid) || true'
-                        } else {
-                            error 'The expected error did not appear in logs.'
+                        if (!success) {
+                            error 'Failed to detect the expected error in logs.'
                         }
                     }
                 }
@@ -90,17 +90,19 @@ pipeline {
                     dir(REPO_DIR) {
                         // Start the application
                         sh 'npm start &> app.log & echo $! > .pid'
-                        
-                        // Monitor logs for the theme error and terminate the app if found
+                        sleep 10  // Wait a few seconds for the app to start
+
+                        // Monitor the logs for specific errors
                         def maxAttempts = 10
                         def attempt = 0
-                        def errorFound = false
+                        def success = false
                         while (attempt < maxAttempts) {
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 if (logContent.contains("Theme start fail : Error: Error loading the theme")) {
-                                    echo 'Error detected: Error loading the theme'
-                                    errorFound = true
+                                    echo 'Error detected: Error loading the theme. Terminating app.'
+                                    sh 'kill $(cat .pid)'
+                                    success = true
                                     break
                                 }
                             }
@@ -109,31 +111,30 @@ pipeline {
                             attempt++
                         }
 
-                        if (errorFound) {
-                            sh 'kill $(cat .pid) || true'
-                        } else {
-                            error 'The expected theme error did not appear in logs.'
+                        if (!success) {
+                            error 'Failed to detect the expected error in logs.'
                         }
                     }
                 }
             }
         }
 
-        stage('Final Start of Application') {
+        stage('Third Start of Application') {
             steps {
                 script {
                     dir(REPO_DIR) {
-                        // Start the application a third time
+                        // Start the application
                         sh 'npm start &> app.log & echo $! > .pid'
-                        
-                        // Wait for app to be ready
+                        sleep 10  // Wait a few seconds for the app to start
+
+                        // Monitor the logs for successful startup
                         def maxAttempts = 10
                         def attempt = 0
                         def success = false
                         while (attempt < maxAttempts) {
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
-                                if (logContent.contains("listening on port ${PORT}")) {
+                                if (logContent.contains("server listening on port ${PORT}")) {
                                     echo 'App is successfully listening on port ${PORT}'
                                     success = true
                                     break
@@ -156,7 +157,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: '**/AquilaCMS/**/*', allowEmptyArchive: true
-            sh 'kill $(cat .pid) || true'
+            sh 'kill $(cat .pid) || true' // Ensure the app is stopped
         }
     }
 }
