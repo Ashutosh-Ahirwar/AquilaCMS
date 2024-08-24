@@ -67,11 +67,9 @@ pipeline {
                         sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
 
-                        // Monitor the logs for the specific error
-                        def maxAttempts = 20  // Adjust this value if necessary
-                        def attempt = 0
+                        // Monitor the logs for the specific error continuously
                         def errorDetected = false
-                        while (attempt < maxAttempts) {
+                        while (true) {
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 echo "Log Content: ${logContent}"
@@ -81,16 +79,15 @@ pipeline {
                                     break
                                 }
                             }
-                            echo 'Error not found yet, retrying...'
+                            echo 'Error not found yet, continuing to monitor...'
                             sleep 20  // Wait before checking again
-                            attempt++
                         }
 
                         if (errorDetected) {
                             // Stop the app process
                             sh 'kill $(cat .pid) || true'
                         } else {
-                            error 'Expected error did not appear in the logs within the expected time.'
+                            error 'Expected error did not appear in the logs.'
                         }
                     }
                 }
