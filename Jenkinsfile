@@ -65,6 +65,7 @@ pipeline {
                             sh 'sudo ss -tuln'  // Print all listening ports
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
+                                echo "Log Content: ${logContent}"
                                 if (logContent.contains("listening on port ${PORT}")) {
                                     echo 'App is listening on port ${PORT}. Waiting for potential errors...'
                                     success = true
@@ -107,6 +108,7 @@ pipeline {
                             sh 'sudo ss -tuln'  // Print all listening ports
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
+                                echo "Log Content: ${logContent}"
                                 if (logContent.contains("listening on port ${PORT}")) {
                                     echo 'App is listening on port ${PORT}. Waiting for theme error...'
                                     success = true
@@ -151,6 +153,7 @@ pipeline {
                             sh 'sudo ss -tuln'  // Print all listening ports
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
+                                echo "Log Content: ${logContent}"
                                 if (logContent.contains("listening on port ${PORT}")) {
                                     echo 'App is successfully listening on port ${PORT}'
                                     success = true
