@@ -5,7 +5,7 @@ pipeline {
         MONGO_DEB_URL = 'https://repo.mongodb.org/apt/ubuntu/dists/jammy/mongodb-org/7.0/multiverse/binary-amd64/mongodb-org-server_7.0.12_amd64.deb'
         REPO_URL = 'https://github.com/Ashutosh-Ahirwar/AquilaCMS.git'
         REPO_DIR = 'AquilaCMS'
-        PORT = '3010'
+        PORT = 3010  // Port on which the app should be listening
     }
 
     stages {
@@ -44,14 +44,7 @@ pipeline {
                 dir(REPO_DIR) {
                     sh 'echo "y" | corepack enable'
                     sh 'yarn set version stable'
-                    
-                    // Install dependencies with error handling
-                    script {
-                        def installStatus = sh(script: 'yarn install', returnStatus: true)
-                        if (installStatus != 0) {
-                            echo 'yarn install completed with errors, but continuing pipeline'
-                        }
-                    }
+                    sh 'echo "y" | yarn install || true'  // Continue even if yarn install fails
                 }
             }
         }
@@ -60,8 +53,8 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
-                        // Start the application and redirect logs to a file
-                        sh 'npm start &> app.log & echo $! > .pid'
+                        // Start the application and capture the output in a file
+                        sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
 
                         // Check if the app is listening on the port or if it encountered an error
@@ -103,11 +96,11 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
-                        // Start the application again and redirect logs to a file
-                        sh 'npm start &> app.log & echo $! > .pid'
+                        // Start the application and capture the output in a file
+                        sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
 
-                        // Check if the app is listening on the port or if it encountered a theme loading error
+                        // Check if the app is listening on the port or if it encountered an error
                         def maxAttempts = 10
                         def attempt = 0
                         def success = false
@@ -116,23 +109,19 @@ pipeline {
                             if (fileExists('app.log')) {
                                 def logContent = readFile('app.log')
                                 echo "Log Content: ${logContent}"
-                                if (logContent.contains("listening on port ${PORT}")) {
-                                    echo 'App is listening on port ${PORT}. Waiting for theme error...'
-                                    success = true
-                                    break
-                                } else if (logContent.contains("Error loading the theme")) {
-                                    echo 'Error occurred: Loading the theme failed'
+                                if (logContent.contains("listening on port ${PORT}") || logContent.contains("Error loading the theme")) {
+                                    echo 'App is listening on port ${PORT} despite theme error'
                                     success = true
                                     break
                                 }
                             }
-                            echo 'App not ready yet or theme error not found, retrying...'
+                            echo 'App not ready yet or error not found, retrying...'
                             sleep 10
                             attempt++
                         }
 
                         if (!success) {
-                            error 'App did not start correctly or did not find the theme loading error within the expected time.'
+                            error 'App did not start correctly or did not find the specific error within the expected time.'
                         }
 
                         // Stop the app process after confirmation
@@ -150,7 +139,7 @@ pipeline {
                         sh 'cd apps/themes/default_theme_2/ && npm run build'
 
                         // Final npm start (app should be fully operational)
-                        sh 'npm start &> app.log & echo $! > .pid'
+                        sh 'npm start > app.log 2>&1 & echo $! > .pid'
                         
                         // Wait for app to be ready
                         def maxAttempts = 10
