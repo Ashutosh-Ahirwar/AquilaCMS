@@ -44,7 +44,14 @@ pipeline {
                 dir(REPO_DIR) {
                     sh 'echo "y" | corepack enable'
                     sh 'yarn set version stable'
-                    sh 'echo "y" | yarn install || true'  // Continue even if yarn install fails
+                    
+                    // Check yarn install status
+                    script {
+                        def installStatus = sh(script: 'yarn install', returnStatus: true)
+                        if (installStatus != 0) {
+                            error 'yarn install failed'
+                        }
+                    }
                 }
             }
         }
