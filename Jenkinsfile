@@ -44,6 +44,7 @@ pipeline {
                 script {
                     dir('AquilaCMS') {
                         try {
+                            // Ensure app starts and listens on 0.0.0.0
                             sh 'npm start || true'  // Ignore initial npm start failure
                         } catch (Exception e) {
                             echo 'Initial npm start failed, trying theme compilation'
