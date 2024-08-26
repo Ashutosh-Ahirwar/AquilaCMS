@@ -68,8 +68,8 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
-                        // Start the application and capture the output in a file
-                        sh 'npm start > app.log 2>&1 & echo $! > .pid'
+                        // Start the application in detached mode using nohup
+                        sh 'nohup npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
 
                         // Monitor the logs for the specific error continuously
@@ -103,8 +103,8 @@ pipeline {
             steps {
                 script {
                     dir(REPO_DIR) {
-                        // Start the application and capture the output in a file
-                        sh 'npm start > app.log 2>&1 & echo $! > .pid'
+                        // Start the application in detached mode using nohup
+                        sh 'nohup npm start > app.log 2>&1 & echo $! > .pid'
                         sleep 10  // Wait a few seconds for the app to start
 
                         // Monitor the logs for the theme error
@@ -144,8 +144,8 @@ pipeline {
                         // Compile the themes
                         sh 'cd apps/themes/default_theme_2/ && npm run build'
 
-                        // Final npm start (app should be fully operational)
-                        sh 'npm start > app.log 2>&1 & echo $! > .pid'
+                        // Final npm start (app should be fully operational) using nohup
+                        sh 'nohup npm start > app.log 2>&1 & echo $! > .pid'
                         
                         // Wait for app to be ready
                         def maxAttempts = 20  // Adjust this value if necessary
@@ -178,7 +178,7 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: '**/AquilaCMS/**/*', allowEmptyArchive: true
-            // Remove kill command to ensure the final app instance remains running
+            // No need to kill process here as it's already managed
         }
     }
 }
