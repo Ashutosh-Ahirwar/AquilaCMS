@@ -136,7 +136,7 @@ const initFrontFramework = async (themeName = null) => {
         if (themeInfo && themeInfo.type) {
             type = themeInfo.type;
         }
-        server.use('/', middlewareServer.maintenance);
+        server.use('/app', middlewareServer.maintenance);
         const color = '\x1b[36m'; // https://stackoverflow.com/a/41407246
         if (type === 'custom') {
             console.log(`%s@@ ${themeName} is a custom theme (default type) %s`, color, '\x1b[0m');
@@ -156,7 +156,7 @@ const initFrontFramework = async (themeName = null) => {
                     }
                     process.chdir(global.aquila.appRoot);
                     if (typeof handler !== 'undefined' && handler !== null) {
-                        server.use('/', handler);
+                        server.use('/app', handler);
                     }
                 } else {
                     let msg = `Your theme (${themeName}) is loaded as a custom theme (default), it needs a 'themeInit.js' file\n`;
@@ -176,7 +176,7 @@ const initFrontFramework = async (themeName = null) => {
                 if (typeof themeInfo.expose !== 'undefined') {
                     pathToPages = path.join(pathToTheme, themeInfo.expose);
                 }
-                server.use('/', express.static(pathToPages));
+                server.use('/app', express.static(pathToPages));
             }
         } else {
             throw new Error('Error with the theme, the type of your theme is not correct');
@@ -219,11 +219,11 @@ const initServer = async () => {
             try {
                 await initFrontFramework(currentTheme); // we compile the front
             } catch (e) {
-                server.use('/', (req, res) => res.end('Theme start fail - Please configure or compile your front-end'));
+                server.use('/app', (req, res) => res.end('Theme start fail - Please configure or compile your front-end'));
                 console.error(`Theme start fail : ${e}`);
             }
         } else {
-            server.use('/', (req, res) => res.end('No compilation for the theme'));
+            server.use('/app', (req, res) => res.end('No compilation for the theme'));
             console.log('%s@@ No compilation for the theme %s', '\x1b[32m', '\x1b[0m');
         }
         return;
